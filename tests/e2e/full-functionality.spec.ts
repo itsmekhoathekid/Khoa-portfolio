@@ -271,10 +271,16 @@ flowchart LR
   expect(searchResponse.ok()).toBeTruthy();
   expect(JSON.stringify(await searchResponse.json())).toContain(slug);
 
+  await page.getByText('edit article', { exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/admin/blogs/.+/edit$`));
+  page.once('dialog', (dialog) => dialog.accept());
+  await page.getByRole('button', { name: 'delete' }).click();
+  await expect(page).toHaveURL(/\/$/);
+
   await page.goto('/');
   await runCommand(page, '/logout');
   await expect(page.locator('.viewer-state')).toContainText('viewer');
-  await page.goto(`/blogs/${slug}`);
+  await page.goto('/blogs/agent-evals');
   await expect(page.getByText('edit article', { exact: true })).toHaveCount(0);
 
   const health = await request.get('/api/health');
