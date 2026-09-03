@@ -4,6 +4,10 @@ test('visitor can navigate by CLI and never sees admin controls', async ({
   page,
 }) => {
   await page.goto('/');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute(
+    'href',
+    '/favicon.svg',
+  );
   await expect(page.getByText('itsmekhoathekid@github')).toBeVisible();
   await expect(page.getByText('add', { exact: true })).toHaveCount(0);
   await expect(page.getByText('edit', { exact: true })).toHaveCount(0);
