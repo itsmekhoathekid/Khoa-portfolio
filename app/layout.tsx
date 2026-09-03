@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'Anh Khoa — CLI Portfolio',
   description:
     'ML engineer portfolio, projects, experience, and technical writing.',
+  icons: {
+    icon: [{ url: '/favicon.svg', type: 'image/svg+xml' }],
+    shortcut: '/favicon.svg',
+  },
 };
 
 const extensionAttributeGuard = `
