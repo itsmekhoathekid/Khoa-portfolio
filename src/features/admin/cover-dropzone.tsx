@@ -29,6 +29,11 @@ export function CoverDropzone({
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [previewSize, setPreviewSize] = useState<{
+    url: string;
+    width: number;
+    height: number;
+  } | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   async function receive(file?: File) {
@@ -37,6 +42,11 @@ export function CoverDropzone({
     setError('');
     try {
       const asset = await uploadAsset(file, 'cover', 'Cover image');
+      setPreviewSize({
+        url: asset.url,
+        width: asset.width,
+        height: asset.height,
+      });
       onChange({ ...value, assetId: asset.id, url: asset.url });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Upload failed.');
@@ -70,7 +80,9 @@ export function CoverDropzone({
           className={
             compact ? 'media-placeholder editable-cover' : 'cover-trigger'
           }
+          data-has-image={Boolean(value.url)}
           type="button"
+          aria-label={value.url ? 'Edit cover image' : fallback}
         >
           {value.url ? (
             <Image
@@ -111,7 +123,10 @@ export function CoverDropzone({
           />
           <button
             type="button"
-            className="asset-dropzone"
+            className={`asset-dropzone${value.url ? ' has-preview' : ''}`}
+            aria-label={
+              value.url ? 'Replace cover image' : 'Upload cover image'
+            }
             onClick={() => inputRef.current?.click()}
             onDragOver={(event: DragEvent) => event.preventDefault()}
             onDrop={(event: DragEvent) => {
@@ -119,11 +134,67 @@ export function CoverDropzone({
               void receive(event.dataTransfer.files[0]);
             }}
           >
-            <ImagePlus size={24} />
-            <span>
-              {busy ? 'uploading + validating…' : 'drop image or choose file'}
-            </span>
-            <small>JPEG, PNG, WebP, AVIF · max 10 MB</small>
+            {value.url ? (
+              <>
+                <span className="cover-source-preview">
+                  <span
+                    className={`cover-source-image ${
+                      previewSize?.url === value.url ? 'is-ready' : 'is-loading'
+                    }`}
+                  >
+                    {previewSize?.url === value.url ? (
+                      <>
+                        <Image
+                          src={value.url}
+                          alt="Full cover preview"
+                          width={previewSize.width}
+                          height={previewSize.height}
+                          sizes="(max-width: 520px) calc(100vw - 64px), 856px"
+                        />
+                        <span
+                          className="focal-marker"
+                          style={{
+                            left: `${value.focalX}%`,
+                            top: `${value.focalY}%`,
+                          }}
+                          aria-hidden="true"
+                        />
+                      </>
+                    ) : (
+                      <Image
+                        src={value.url}
+                        alt="Full cover preview"
+                        fill
+                        sizes="(max-width: 520px) calc(100vw - 64px), 856px"
+                        onLoad={(event) =>
+                          setPreviewSize({
+                            url: value.url!,
+                            width: event.currentTarget.naturalWidth,
+                            height: event.currentTarget.naturalHeight,
+                          })
+                        }
+                      />
+                    )}
+                  </span>
+                </span>
+                <span className="asset-replace-label">
+                  <ImagePlus size={14} />
+                  {busy
+                    ? 'uploading + validating…'
+                    : 'click or drop to replace'}
+                </span>
+              </>
+            ) : (
+              <>
+                <ImagePlus size={24} />
+                <span>
+                  {busy
+                    ? 'uploading + validating…'
+                    : 'drop image or choose file'}
+                </span>
+                <small>JPEG, PNG, WebP, AVIF · max 10 MB</small>
+              </>
+            )}
           </button>
           {value.url ? (
             <div className="focal-controls">
