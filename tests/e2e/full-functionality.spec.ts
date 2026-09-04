@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { resolve } from 'node:path';
 
 async function runCommand(page: Page, value: string) {
   const command = page.getByLabel('Terminal command');
@@ -174,6 +175,7 @@ test('admin can upload rich Markdown, keep a draft private, publish, search, and
   const title = `CI Rich Blog ${Date.now()}`;
   const png =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+  const coverImage = resolve('public/blog-agent-evals-cover.png');
 
   await page.goto('/');
   await runCommand(
@@ -192,14 +194,37 @@ test('admin can upload rich Markdown, keep a draft private, publish, search, and
   await expect(page).toHaveURL(/\/admin\/home\/edit$/);
   await page.getByLabel('role').fill('CI-only home profile draft');
   await page.locator('.cover-trigger').click();
-  await page.locator('.dropzone-dialog input[type="file"]').setInputFiles({
-    name: 'portrait.png',
-    mimeType: 'image/png',
-    buffer: Buffer.from(png, 'base64'),
-  });
+  await page
+    .locator('.dropzone-dialog input[type="file"]')
+    .setInputFiles(coverImage);
+  await expect(
+    page.getByRole('img', { name: 'Full cover preview' }),
+  ).toBeVisible();
+  await expect(page.locator('.focal-marker')).toHaveAttribute(
+    'style',
+    /left: 50%; top: 50%/,
+  );
+  const focalInputs = page.locator('.focal-controls input');
+  await focalInputs.nth(0).focus();
+  await page.keyboard.press('Home');
+  for (let step = 0; step < 25; step += 1) {
+    await page.keyboard.press('ArrowRight');
+  }
+  await focalInputs.nth(1).focus();
+  await page.keyboard.press('Home');
+  for (let step = 0; step < 75; step += 1) {
+    await page.keyboard.press('ArrowRight');
+  }
+  await expect(page.locator('.focal-marker')).toHaveAttribute(
+    'style',
+    /left: 25%; top: 75%/,
+  );
   const usePortrait = page.getByRole('button', { name: 'use in draft' });
   await expect(usePortrait).toBeEnabled();
   await usePortrait.click();
+  await expect(
+    page.locator('.home-portrait-editor .cover-trigger img'),
+  ).toHaveCSS('object-fit', 'contain');
   await expect(page.locator('.home-editor-ascii-preview canvas')).toBeVisible();
   await page.getByRole('button', { name: 'save draft' }).click();
   await expect(page.locator('.editor-status')).toContainText('draft saved');
@@ -273,7 +298,17 @@ flowchart LR
     buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"/>'),
   });
   await expect(page.getByText(/SVG is disabled/)).toBeVisible();
-  await page.keyboard.press('Escape');
+  await page
+    .locator('.dropzone-dialog input[type="file"]')
+    .setInputFiles(coverImage);
+  await expect(
+    page.getByRole('img', { name: 'Full cover preview' }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'use in draft' }).click();
+  await expect(page.locator('.cover-trigger img')).toHaveCSS(
+    'object-fit',
+    'contain',
+  );
   await page.getByRole('button', { name: 'publish' }).click();
 
   await expect(page).toHaveURL(new RegExp(`/blogs/${slug}$`));
