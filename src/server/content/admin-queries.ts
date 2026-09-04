@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { requireAdmin } from '@/src/server/auth/guard';
+import { getDraftHomeProfile } from '@/src/server/content/home-profile';
 import { getDb } from '@/src/server/db/client';
 import {
   assets,
@@ -30,6 +31,11 @@ export type EditorDraft = {
   periodStart: string;
   periodEnd: string;
 };
+
+export async function getAdminHomeProfile() {
+  await requireAdmin();
+  return getDraftHomeProfile();
+}
 
 const emptyDraft: EditorDraft = {
   kind: 'blog',

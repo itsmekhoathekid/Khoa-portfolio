@@ -15,6 +15,7 @@ import {
   works,
   contacts,
 } from '@/src/server/db/schema';
+import { getPublishedHomeProfile } from '@/src/server/content/home-profile';
 
 export type PublicWork = {
   id: string;
@@ -246,17 +247,20 @@ export async function getPublicContacts(): Promise<PublicContact[]> {
 
 export async function getPublicPortfolio() {
   const [
+    homeProfile,
     publishedWorks,
     publishedExperiences,
     publishedBlogs,
     publishedContacts,
   ] = await Promise.all([
+    getPublishedHomeProfile(),
     getPublishedWorks(),
     getPublishedExperiences(),
     getPublishedBlogs(),
     getPublicContacts(),
   ]);
   return {
+    homeProfile,
     works: publishedWorks,
     experiences: publishedExperiences,
     blogs: publishedBlogs,

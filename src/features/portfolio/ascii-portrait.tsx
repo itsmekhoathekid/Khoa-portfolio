@@ -4,7 +4,15 @@ import { useEffect, useRef } from 'react';
 
 const ramp = ' .,:;irsXA253hMHGS#9B&@';
 
-export function AsciiPortrait() {
+export function AsciiPortrait({
+  src = '/khoa-source.jpg',
+  focalX = 50,
+  focalY = 50,
+}: {
+  src?: string;
+  focalX?: number;
+  focalY?: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -13,7 +21,7 @@ export function AsciiPortrait() {
     const context = canvas.getContext('2d');
     if (!context) return;
     const source = new Image();
-    source.src = '/khoa-source.jpg';
+    source.src = src;
     let frame = 0;
 
     function render() {
@@ -38,29 +46,29 @@ export function AsciiPortrait() {
       sample.fillStyle = '#080d13';
       sample.fillRect(0, 0, columns, rows);
 
-      // Characters are taller than they are wide. Fit the source in visual
-      // pixels instead of treating every canvas sample as a square, otherwise
-      // a 4:3 photo is stretched across the wide 7:3 portfolio column.
-      const sourceGridRatio =
-        (source.naturalWidth / source.naturalHeight) * (cellHeight / cellWidth);
-      const gridRatio = columns / rows;
-      let drawWidth = columns;
-      let drawHeight = rows;
-      if (sourceGridRatio > gridRatio) {
-        drawHeight = drawWidth / sourceGridRatio;
-      } else {
-        drawWidth = drawHeight * sourceGridRatio;
-      }
+      // Crop in source-image pixels before sampling so the ASCII output fills
+      // the complete frame without stretching. The focal point lets an admin
+      // keep a face or other subject in view for differently shaped uploads.
+      const targetRatio = rect.width / rect.height;
+      const sourceRatio = source.naturalWidth / source.naturalHeight;
+      let cropWidth = source.naturalWidth;
+      let cropHeight = source.naturalHeight;
+      if (sourceRatio > targetRatio) cropWidth = cropHeight * targetRatio;
+      else cropHeight = cropWidth / targetRatio;
+      const sourceX =
+        (source.naturalWidth - cropWidth) * (Math.min(100, focalX) / 100);
+      const sourceY =
+        (source.naturalHeight - cropHeight) * (Math.min(100, focalY) / 100);
       sample.drawImage(
         source,
+        sourceX,
+        sourceY,
+        cropWidth,
+        cropHeight,
         0,
         0,
-        source.naturalWidth,
-        source.naturalHeight,
-        (columns - drawWidth) / 2,
-        (rows - drawHeight) / 2,
-        drawWidth,
-        drawHeight,
+        columns,
+        rows,
       );
       const pixels = sample.getImageData(0, 0, columns, rows).data;
       context.font = `${cellHeight}px ui-monospace, SFMono-Regular, Menlo, monospace`;
@@ -93,7 +101,7 @@ export function AsciiPortrait() {
       observer.disconnect();
       cancelAnimationFrame(frame);
     };
-  }, []);
+  }, [focalX, focalY, src]);
 
   return (
     <canvas
