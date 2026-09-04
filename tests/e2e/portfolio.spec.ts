@@ -11,6 +11,12 @@ test('visitor can navigate by CLI and never sees admin controls', async ({
   await expect(page.getByText('itsmekhoathekid@github')).toBeVisible();
   await expect(page.getByText('add', { exact: true })).toHaveCount(0);
   await expect(page.getByText('edit', { exact: true })).toHaveCount(0);
+  await expect(
+    page.getByRole('link', { name: 'Replace rendered portrait' }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('link', { name: 'Edit home profile text' }),
+  ).toHaveCount(0);
   const command = page.getByLabel('Terminal command');
   await command.fill('tail -n 3 experience.log');
   await command.press('Enter');

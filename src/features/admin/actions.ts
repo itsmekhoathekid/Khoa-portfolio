@@ -5,6 +5,11 @@ import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { requireAdmin } from '@/src/server/auth/guard';
 import { draftInputSchema } from '@/src/server/content/types';
+import {
+  serializeHomeProfile,
+  type HomeProfile,
+  type HomeProfilePrefix,
+} from '@/src/features/content/home-profile';
 import { getDb } from '@/src/server/db/client';
 import {
   blogRevisions,
@@ -15,6 +20,7 @@ import {
   workRevisions,
   works,
   contacts,
+  assets,
 } from '@/src/server/db/schema';
 
 const mutationTargetSchema = z.object({
@@ -24,6 +30,19 @@ const mutationTargetSchema = z.object({
 
 const replaceCoverSchema = mutationTargetSchema.extend({
   assetId: z.string().uuid(),
+  focalX: z.number().min(0).max(100),
+  focalY: z.number().min(0).max(100),
+});
+
+const homeProfileInputSchema = z.object({
+  handle: z.string().trim().min(1).max(120),
+  role: z.string().trim().min(1).max(240),
+  currentQuest: z.string().trim().min(1).max(400),
+  statusText: z.string().trim().min(1).max(400),
+  core: z.string().trim().min(1).max(500),
+  systems: z.string().trim().min(1).max(500),
+  metrics: z.array(z.string().trim().min(1).max(240)).min(1).max(8),
+  portraitAssetId: z.string().uuid().nullable(),
   focalX: z.number().min(0).max(100),
   focalY: z.number().min(0).max(100),
 });
@@ -319,7 +338,6 @@ export async function replaceCoverDraftAction(raw: unknown) {
     const session = await requireAdmin();
     const target = replaceCoverSchema.parse(raw);
     const db = getDb();
-    const { assets } = await import('@/src/server/db/schema');
     const [asset] = await db
       .select({ status: assets.status })
       .from(assets)
@@ -400,6 +418,69 @@ export async function replaceCoverDraftAction(raw: unknown) {
     return { ok: true } as const;
   } catch (error) {
     return { ok: false, error: mutationError(error) } as const;
+  }
+}
+
+export async function saveHomeProfileDraftAction(raw: unknown) {
+  try {
+    await requireAdmin();
+    const input = homeProfileInputSchema.parse(raw);
+    await writeHomeProfile(input, 'HOME_DRAFT');
+    revalidatePath('/admin/home/edit');
+    return { ok: true } as const;
+  } catch (error) {
+    return { ok: false, error: mutationError(error) } as const;
+  }
+}
+
+export async function publishHomeProfileAction(raw: unknown) {
+  try {
+    await requireAdmin();
+    const input = homeProfileInputSchema.parse(raw);
+    await writeHomeProfile(input, 'HOME');
+    revalidatePath('/');
+    revalidatePath('/admin/home/edit');
+    return { ok: true } as const;
+  } catch (error) {
+    return { ok: false, error: mutationError(error) } as const;
+  }
+}
+
+async function writeHomeProfile(
+  input: z.infer<typeof homeProfileInputSchema>,
+  prefix: HomeProfilePrefix,
+) {
+  const db = getDb();
+  if (input.portraitAssetId) {
+    const [asset] = await db
+      .select({ status: assets.status })
+      .from(assets)
+      .where(eq(assets.id, input.portraitAssetId))
+      .limit(1);
+    if (asset?.status !== 'ready')
+      throw new Error('The uploaded portrait is not ready.');
+  }
+  const profile: HomeProfile = { ...input, portraitUrl: null };
+  const settings = serializeHomeProfile(profile, prefix);
+  let sortOrder = prefix === 'HOME' ? 1000 : 1100;
+  for (const [key, value] of Object.entries(settings)) {
+    const row = {
+      key,
+      label: key
+        .toLowerCase()
+        .split('_')
+        .map((part) => part[0]?.toUpperCase() + part.slice(1))
+        .join(' '),
+      value,
+      href: null,
+      visible: false,
+      sortOrder: sortOrder++,
+      updatedAt: new Date(),
+    };
+    await db
+      .insert(contacts)
+      .values(row)
+      .onConflictDoUpdate({ target: contacts.key, set: row });
   }
 }
 

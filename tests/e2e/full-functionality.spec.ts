@@ -101,6 +101,10 @@ test('visitor cannot access admin pages or asset mutations', async ({
   page,
   request,
 }) => {
+  const homeEditorResponse = await page.goto('/admin/home/edit');
+  expect(homeEditorResponse?.status()).toBe(200);
+  await expect(page).toHaveURL(/\/$/);
+
   const editorResponse = await page.goto('/admin/blogs/new/edit');
   expect(editorResponse?.status()).toBe(200);
   await expect(page).toHaveURL(/\/$/);
@@ -180,6 +184,27 @@ test('admin can upload rich Markdown, keep a draft private, publish, search, and
   await expect(page.getByLabel('Terminal command')).toHaveValue(
     '/login username="redacted" password="••••••••"',
   );
+
+  await expect(
+    page.getByRole('link', { name: 'Replace rendered portrait' }),
+  ).toBeVisible();
+  await page.getByRole('link', { name: 'Edit home profile text' }).click();
+  await expect(page).toHaveURL(/\/admin\/home\/edit$/);
+  await page.getByLabel('role').fill('CI-only home profile draft');
+  await page.locator('.cover-trigger').click();
+  await page.locator('.dropzone-dialog input[type="file"]').setInputFiles({
+    name: 'portrait.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(png, 'base64'),
+  });
+  const usePortrait = page.getByRole('button', { name: 'use in draft' });
+  await expect(usePortrait).toBeEnabled();
+  await usePortrait.click();
+  await expect(page.locator('.home-editor-ascii-preview canvas')).toBeVisible();
+  await page.getByRole('button', { name: 'save draft' }).click();
+  await expect(page.locator('.editor-status')).toContainText('draft saved');
+  await page.goto('/');
+  await expect(page.getByText('CI-only home profile draft')).toHaveCount(0);
 
   await page.getByRole('button', { name: '/blogs' }).click();
   await page.getByRole('link', { name: 'add' }).click();

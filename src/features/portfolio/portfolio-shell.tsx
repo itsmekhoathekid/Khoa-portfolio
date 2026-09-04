@@ -2,7 +2,16 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Edit3, Moon, Plus, Search, Sun, Trash2, X } from 'lucide-react';
+import {
+  Edit3,
+  ImagePlus,
+  Moon,
+  Plus,
+  Search,
+  Sun,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { type SyntheticEvent, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AsciiPortrait } from './ascii-portrait';
@@ -21,6 +30,7 @@ import type {
   PublicExperience,
   PublicWork,
 } from '@/src/server/content/public-queries';
+import type { HomeProfile } from '@/src/features/content/home-profile';
 import {
   helpText,
   parseCommand,
@@ -45,11 +55,13 @@ const sectionCommands: Record<Section, string> = {
 };
 
 export function PortfolioShell({
+  homeProfile,
   works,
   experiences,
   blogs,
   contacts,
 }: {
+  homeProfile: HomeProfile;
   works: PublicWork[];
   experiences: PublicExperience[];
   blogs: PublicBlog[];
@@ -325,7 +337,9 @@ export function PortfolioShell({
             {feedback}
           </div>
           <div className="terminal-content">
-            {section === 'home' ? <HomePanel /> : null}
+            {section === 'home' ? (
+              <HomePanel profile={homeProfile} isAdmin={isAdmin} />
+            ) : null}
             {section === 'experiences' ? (
               <ExperiencePanel rows={experiences} isAdmin={isAdmin} />
             ) : null}
@@ -349,41 +363,69 @@ export function PortfolioShell({
   );
 }
 
-function HomePanel() {
+function HomePanel({
+  profile,
+  isAdmin,
+}: {
+  profile: HomeProfile;
+  isAdmin: boolean;
+}) {
   return (
     <div className="home-grid">
       <figure className="portrait-frame">
-        <AsciiPortrait />
+        <AsciiPortrait
+          src={profile.portraitUrl ?? '/khoa-source.jpg'}
+          focalX={profile.focalX}
+          focalY={profile.focalY}
+        />
+        <div className="pixel-overlay" aria-hidden="true" />
+        {isAdmin ? (
+          <Link
+            className="portrait-admin-link"
+            href="/admin/home/edit"
+            aria-label="Replace rendered portrait"
+          >
+            <ImagePlus size={15} /> replace image
+          </Link>
+        ) : null}
       </figure>
       <article className="identity-panel">
-        <h1>itsmekhoathekid@github</h1>
+        {isAdmin ? (
+          <Link
+            className="identity-edit-link"
+            href="/admin/home/edit"
+            aria-label="Edit home profile text"
+          >
+            <Edit3 size={13} /> edit text
+          </Link>
+        ) : null}
+        <h1>{profile.handle}</h1>
         <dl>
           <div>
             <dt>Role:</dt>
-            <dd>AI Engineer · Data Science graduate</dd>
+            <dd>{profile.role}</dd>
           </div>
           <div>
             <dt>Current quest:</dt>
-            <dd>Recommendation MLOps &amp; agentic systems</dd>
+            <dd>{profile.currentQuest}</dd>
           </div>
           <div>
             <dt>Status:</dt>
-            <dd>Open to AI/ML engineering opportunities</dd>
+            <dd>{profile.statusText}</dd>
           </div>
           <div>
             <dt>Core:</dt>
-            <dd>PyTorch · Recommenders · Transformers · MLOps</dd>
+            <dd>{profile.core}</dd>
           </div>
           <div>
             <dt>Systems:</dt>
-            <dd>Kafka · Spark/Flink · Kubernetes · MCP/A2A</dd>
+            <dd>{profile.systems}</dd>
           </div>
         </dl>
         <div className="identity-metrics">
-          <span>◆ B.Sc. Data Science · UIT, VNU-HCM</span>
-          <span>★ GPA: 3.6 · graduated 2026</span>
-          <span>● TOEIC L&amp;R: 865</span>
-          <span>λ TOEIC S&amp;W: 340</span>
+          {profile.metrics.map((metric) => (
+            <span key={metric}>{metric}</span>
+          ))}
         </div>
       </article>
     </div>
