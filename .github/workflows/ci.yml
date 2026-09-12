@@ -77,7 +77,7 @@ jobs:
           -p 9000:9000
           -e MINIO_ROOT_USER=portfolio
           -e MINIO_ROOT_PASSWORD=portfolio-secret
-          minio/minio:RELEASE.2025-07-23T15-54-02Z
+          quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
           server /data
       - name: Initialize database and storage
         run: |
