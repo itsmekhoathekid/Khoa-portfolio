@@ -279,6 +279,14 @@ export const contacts = pgTable('contacts', {
     .defaultNow(),
 });
 
+export const siteMetrics = pgTable('site_metrics', {
+  key: text('key').primaryKey(),
+  value: integer('value').notNull().default(0),
+  updatedAt: timestamp('updated_at', { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 // Better Auth resolves its core models by these singular schema keys. Keep the
 // descriptive plural exports above for application repositories, and expose
 // aliases so the Drizzle adapter can find the same physical tables.

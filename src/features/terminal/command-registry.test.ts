@@ -35,6 +35,13 @@ describe('terminal command registry', () => {
       type: 'search',
       query: 'agent evals',
     });
+    expect(parseCommand('profile-views')?.action).toEqual({
+      type: 'profileViews',
+    });
+    expect(parseCommand('views')?.action).toEqual({ type: 'profileViews' });
+    expect(parseCommand('cat profile_views.count')?.action).toEqual({
+      type: 'profileViews',
+    });
     expect(parseCommand('/logout')?.action).toEqual({ type: 'logout' });
   });
 

@@ -49,6 +49,11 @@ test('all public CLI routes and filters execute', async ({ page }) => {
 
   await runCommand(page, './whoami');
   await expect(page.getByText('itsmekhoathekid@github')).toBeVisible();
+
+  await runCommand(page, 'profile-views');
+  await expect(page.locator('.terminal-feedback')).toHaveText(
+    /profile views: [\d,]+/,
+  );
 });
 
 test('help, invalid command, CLI search, and CLI theme work', async ({
@@ -125,6 +130,28 @@ test('visitor cannot access admin pages or asset mutations', async ({
     { data: { width: 1, height: 1, altText: 'test' } },
   );
   expect(finalize.status()).toBe(401);
+});
+
+test('profile views count at most once per browser each day', async ({
+  request,
+}) => {
+  const first = await request.post('/api/profile-views');
+  expect(first.ok()).toBeTruthy();
+  const firstPayload = (await first.json()) as {
+    views: number;
+    counted: boolean;
+  };
+  expect(firstPayload.counted).toBe(true);
+  expect(firstPayload.views).toBeGreaterThan(0);
+
+  const second = await request.post('/api/profile-views');
+  expect(second.ok()).toBeTruthy();
+  const secondPayload = (await second.json()) as {
+    views: number;
+    counted: boolean;
+  };
+  expect(secondPayload.counted).toBe(false);
+  expect(secondPayload.views).toBeGreaterThanOrEqual(firstPayload.views);
 });
 
 test('failed login stays in viewer mode and redacts the password', async ({

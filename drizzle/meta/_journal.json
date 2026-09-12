@@ -8,6 +8,13 @@
       "when": 1788329460794,
       "tag": "0000_adorable_scourge",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789192643761,
+      "tag": "0001_wandering_thanos",
+      "breakpoints": true
     }
   ]
 }
