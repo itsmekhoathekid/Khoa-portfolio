@@ -5,7 +5,7 @@ A single-deployable Next.js portfolio whose public interface behaves like a term
 ## What is implemented
 
 - Single-page public routes for `/home/anhkhoa`, `/experiences`, `/myworks/*`, `/contacts`, and `/blogs`.
-- A command registry for `./whoami`, `tail`, `ls`, `cat`, `bat`, search, theme, login, password change, and logout.
+- A command registry for `./whoami`, `tail`, `ls`, `cat`, `bat`, `profile-views`, search, theme, login, password change, and logout.
 - Better Auth username sessions. Admin controls are derived from the real session and every mutation checks the session again on the server.
 - Draft revisions and explicit publish pointers for blogs, works, and experiences.
 - PostgreSQL full-text search populated only when a revision is published.
@@ -33,6 +33,10 @@ Login is intentionally command-only:
 /passwd current="old-password" new="new-password"
 /logout
 ```
+
+Anyone can run `profile-views` (or `views`) to read the aggregate homepage
+view count. A browser contributes at most one view every 24 hours; the counter
+stores no IP address, user agent, or other visitor identifier.
 
 Credential commands are marked sensitive and redacted immediately after submit. They are not sent to search, analytics, or application logs.
 

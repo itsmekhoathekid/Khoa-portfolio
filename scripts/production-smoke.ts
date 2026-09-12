@@ -41,6 +41,21 @@ for (const marker of ['itsmekhoathekid@github', 'B.Sc. Data Science']) {
     throw new Error(`Homepage is missing “${marker}”.`);
 }
 
+const profileViewsResponse = await fetch(`${baseUrl}/api/profile-views`, {
+  cache: 'no-store',
+});
+if (!profileViewsResponse.ok)
+  throw new Error('Production profile view counter failed.');
+const profileViews = (await profileViewsResponse.json()) as {
+  views?: number;
+  mode?: string;
+};
+if (
+  profileViews.mode !== 'production' ||
+  typeof profileViews.views !== 'number'
+)
+  throw new Error('Production profile view counter returned invalid data.');
+
 const searchResponse = await fetch(
   `${baseUrl}/api/search?q=${encodeURIComponent('agent evals')}`,
 );

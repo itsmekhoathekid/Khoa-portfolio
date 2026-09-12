@@ -12,7 +12,13 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { type SyntheticEvent, useMemo, useRef, useState } from 'react';
+import {
+  type SyntheticEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { AsciiPortrait } from './ascii-portrait';
 import { authClient } from '@/src/features/admin/auth-client';
@@ -80,6 +86,16 @@ export function PortfolioShell({
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const marker = 'khoa_profile_view_recorded';
+    if (sessionStorage.getItem(marker)) return;
+    sessionStorage.setItem(marker, '1');
+    void fetch('/api/profile-views', {
+      method: 'POST',
+      keepalive: true,
+    }).catch(() => sessionStorage.removeItem(marker));
+  }, []);
 
   const visibleWorks = useMemo(
     () =>
@@ -150,6 +166,27 @@ export function PortfolioShell({
       setSearchOpen(true);
       await runSearch(action.query);
       return setFeedback(`searching published content for “${action.query}”`);
+    }
+    if (action.type === 'profileViews') {
+      setFeedback('reading profile view counter…');
+      try {
+        const response = await fetch('/api/profile-views', {
+          cache: 'no-store',
+        });
+        if (!response.ok) throw new Error('Profile view request failed.');
+        const payload = (await response.json()) as {
+          views?: number;
+          mode?: 'demo' | 'production';
+        };
+        const views = payload.views ?? 0;
+        return setFeedback(
+          `profile views: ${views.toLocaleString('en-US')}${
+            payload.mode === 'demo' ? ' · demo mode' : ''
+          }`,
+        );
+      } catch {
+        return setFeedback('profile views unavailable — try again');
+      }
     }
     if (action.type === 'login') {
       const result = await authClient.signIn.username({

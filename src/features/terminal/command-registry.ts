@@ -8,6 +8,7 @@ export type TerminalAction =
   | { type: 'work'; kind: WorkRoute | 'all' }
   | { type: 'blog'; slug: string }
   | { type: 'search'; query: string }
+  | { type: 'profileViews' }
   | { type: 'theme'; theme: 'light' | 'dark' }
   | { type: 'login'; username: string; password: string }
   | { type: 'passwd'; currentPassword: string; newPassword: string }
@@ -90,6 +91,14 @@ export const commandRegistry: readonly CommandDefinition[] = [
         ? { type: 'search', query: match[1].replace(/^['"]|['"]$/g, '') }
         : null;
     },
+  },
+  {
+    name: 'profile-views',
+    aliases: ['profile-views', 'views', 'cat profile_views.count'],
+    sensitive: false,
+    parse: exact(['profile-views', 'views', 'cat profile_views.count'], {
+      type: 'profileViews',
+    }),
   },
   {
     name: 'theme',
